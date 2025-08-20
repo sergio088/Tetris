@@ -93,19 +93,22 @@ export default function CampoTetris() {
 
   function desenharPeças(ctx: CanvasRenderingContext2D | null | undefined) {
     if (trocaPeça) {
-      const n = Math.floor(Math.random() * peças.length);
-      const peça = peças[n];
       setPeçasCampo((pos) => {
-        return [peça, ...pos];
+        const n = Math.floor(Math.random() * peças.length);
+        const peça = peças[nRef.current];
+
+        return [peça.map(([x, y]) => [x, y]), ...pos];
       });
       setTrocaPeça(false);
     }
-    for (let i = 0; i <= peçasCampoRef.current.length; i++) {
-      peçasCampoRef.current[i].forEach(([x, y]) => {
+
+    peçasCampoRef.current.forEach((p) => {
+      for (let i = 0; i < 4; i++) {
+        const [x, y] = p[i];
         ctx!.fillStyle = "orange";
         ctx!.fillRect(x * 20, y * 20, 20, 20);
-      });
-    }
+      }
+    });
   }
 
   useEffect(() => {
@@ -152,6 +155,9 @@ export default function CampoTetris() {
         return [novaPosiçao];
       }
       if (direçao === "ArrowDown") {
+        const novaPosiçao = peça.map(([x, y]) => [x, y + 1]);
+        setDireçao("");
+        return [novaPosiçao];
       }
       if (direçao === "ArrowRight") {
         const novaPosiçao = peça.map(([x, y]) => [x + 1, y]);
@@ -164,8 +170,9 @@ export default function CampoTetris() {
         setDireçao("");
         return [novaPosiçao];
         // return pos.map((p, i) => (i === nRef.current ? novaPosiçao : p));
+      } else {
+        return pos;
       }
-      return pos;
     });
     const ctx = canvasRef.current?.getContext("2d");
     desenharCampo(ctx);
@@ -191,7 +198,7 @@ export default function CampoTetris() {
           if (!peça) return pos; // se não existe, não faz nada
 
           const novaPeça = peça.map(([x, y]): number[] => [x, y + 1]);
-          const peçaEmCampo = [];
+          // const peçaEmCampo = [];
 
           let limiteB;
           peça.forEach(([x, y]) => {
@@ -206,7 +213,7 @@ export default function CampoTetris() {
             desenharCampo(ctx);
             desenharPeças(ctx);
             setPeçasCampo((p) => {
-              return pos;
+              return p;
             });
             peçaAtual();
             limiteB = false;
