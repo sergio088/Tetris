@@ -152,23 +152,23 @@ export default function CampoTetris() {
         const novaPosiçao = rotaçao.map(([x, y]) => [x + eixo[0], y + eixo[1]]);
         setDireçao("");
 
-        return [novaPosiçao];
+        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
       }
       if (direçao === "ArrowDown") {
         const novaPosiçao = peça.map(([x, y]) => [x, y + 1]);
         setDireçao("");
-        return [novaPosiçao];
+        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
       }
       if (direçao === "ArrowRight") {
         const novaPosiçao = peça.map(([x, y]) => [x + 1, y]);
 
         setDireçao("");
-        return [novaPosiçao];
+         return pos.map((p,i)=> i === 0? novaPosiçao  : p)
       }
       if (direçao === "ArrowLeft") {
         const novaPosiçao = peça.map(([x, y]) => [x - 1, y]);
         setDireçao("");
-        return [novaPosiçao];
+        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
         // return pos.map((p, i) => (i === nRef.current ? novaPosiçao : p));
       } else {
         return pos;
