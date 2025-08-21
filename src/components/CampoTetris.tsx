@@ -56,11 +56,12 @@ export default function CampoTetris() {
     peçaS,
   ]);
   const peçasRef = useRef<number[][][]>(peças);
-  const [trocaPeça, setTrocaPeça] = useState(true);
+
   const nRef = useRef<number>(0);
   const [direçao, setDireçao] = useState("");
   const [peçasCampo, setPeçasCampo] = useState<number[][][]>([]);
   const peçasCampoRef = useRef<number[][][]>([]);
+  const [num, setNum] = useState(Number);
 
   function desenharCampo(ctx: CanvasRenderingContext2D | null | undefined) {
     for (let y = 0; y < 20; y++) {
@@ -76,12 +77,18 @@ export default function CampoTetris() {
 
   const peçaAtual = () => {
     const n = Math.floor(Math.random() * peças.length);
-    return n;
+    setNum(n);
   };
 
   useEffect(() => {
-    nRef.current = peçaAtual();
-  }, [nRef]);
+    nRef.current = num;
+  }, [num]);
+
+  useEffect(() => {
+    setPeçasCampo((pos) => {
+      return [peças[nRef.current].map(([x, y]) => [x, y]), ...pos];
+    });
+  }, []);
 
   useEffect(() => {
     peçasRef.current = peças;
@@ -92,21 +99,14 @@ export default function CampoTetris() {
   }, [peçasCampo]);
 
   function desenharPeças(ctx: CanvasRenderingContext2D | null | undefined) {
-    if (trocaPeça) {
-      setPeçasCampo((pos) => {
-        const n = Math.floor(Math.random() * peças.length);
-        const peça = peças[nRef.current];
-
-        return [peça.map(([x, y]) => [x, y]), ...pos];
-      });
-      setTrocaPeça(false);
-    }
-
     peçasCampoRef.current.forEach((p) => {
       for (let i = 0; i < 4; i++) {
         const [x, y] = p[i];
+        // const cor = p[i][2] === 0
         ctx!.fillStyle = "orange";
         ctx!.fillRect(x * 20, y * 20, 20, 20);
+        ctx!.strokeStyle = "black";
+        ctx!.strokeRect(x * 20, y * 20, 20, 20);
       }
     });
   }
@@ -123,6 +123,7 @@ export default function CampoTetris() {
       if (e.key === "ArrowDown") setDireçao("ArrowDown");
       if (e.key === "ArrowRight") setDireçao("ArrowRight");
       if (e.key === "ArrowLeft") setDireçao("ArrowLeft");
+      if (e.key === " ") setDireçao("Space");
     };
 
     document.addEventListener("keydown", keydown);
@@ -131,18 +132,6 @@ export default function CampoTetris() {
   useEffect(() => {
     setPeçasCampo((pos) => {
       const peça = pos[0];
-      let limiteB;
-      peça.forEach(([x, y]) => {
-        if (y >= 19) limiteB = true;
-        if (x <= 0 || x >= 9) {
-        }
-      });
-      if (limiteB) {
-        // setTrocaPeça(true);
-        peçaAtual();
-        // return pos.map((p, i) => (i === nRef.current ? novaPeça : p));
-        return pos;
-      }
 
       if (direçao === "ArrowUp") {
         if (nRef.current === 1) return pos;
@@ -152,23 +141,54 @@ export default function CampoTetris() {
         const novaPosiçao = rotaçao.map(([x, y]) => [x + eixo[0], y + eixo[1]]);
         setDireçao("");
 
-        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
+        return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
       }
       if (direçao === "ArrowDown") {
         const novaPosiçao = peça.map(([x, y]) => [x, y + 1]);
+        for (let i = 0; i < novaPosiçao.length; i++) {
+          if (novaPosiçao[i][1] > 19) {
+            return pos;
+          }
+        }
+
+        for (let i = 0; i < pos.length; i++) {
+          for (let p = 0; p < pos[i].length; p++) {
+            for (let n = 0; n < novaPosiçao.length; n++) {
+              if (
+                novaPosiçao[n][0] === pos[i][p][0] &&
+                novaPosiçao[n][1] === pos[i][p][1]
+              ) {
+                setDireçao("");
+                return pos;
+              }
+            }
+          }
+        }
+
         setDireçao("");
-        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
+        return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
       }
       if (direçao === "ArrowRight") {
         const novaPosiçao = peça.map(([x, y]) => [x + 1, y]);
-
+        const novaPeça = peça.map(([x, y]): number[] => [x, y + 1]);
+        for (let i = 0; i < novaPosiçao.length; i++) {
+          if (novaPosiçao[i][0] > 9) {
+            return pos;
+          }
+        }
         setDireçao("");
-         return pos.map((p,i)=> i === 0? novaPosiçao  : p)
+        return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
       }
       if (direçao === "ArrowLeft") {
         const novaPosiçao = peça.map(([x, y]) => [x - 1, y]);
+        const novaPeça = peça.map(([x, y]): number[] => [x, y + 1]);
+        for (let i = 0; i < novaPosiçao.length; i++) {
+          if (novaPosiçao[i][0] < 0) {
+            return pos;
+          }
+        }
         setDireçao("");
-        return pos.map((p,i)=> i === 0? novaPosiçao  : p)
+        return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
         // return pos.map((p, i) => (i === nRef.current ? novaPosiçao : p));
       } else {
         return pos;
@@ -198,26 +218,34 @@ export default function CampoTetris() {
           if (!peça) return pos; // se não existe, não faz nada
 
           const novaPeça = peça.map(([x, y]): number[] => [x, y + 1]);
-          // const peçaEmCampo = [];
 
-          let limiteB;
-          peça.forEach(([x, y]) => {
-            if (y >= 19) limiteB = true;
-            if (x <= 0 || x >= 9) {
+          for (let i = 1; i < pos.length; i++) {
+            for (let p = 0; p < pos[i].length; p++) {
+              for (let n = 0; n < novaPeça.length; n++) {
+                if (
+                  novaPeça[n][0] === pos[i][p][0] &&
+                  novaPeça[n][1] === pos[i][p][1]
+                ) {
+                  const ctx = canvasRef.current?.getContext("2d");
+                  desenharCampo(ctx);
+                  desenharPeças(ctx);
+                  peçaAtual();
+                  const peçaNova = peças[nRef.current];
+                  return [peçaNova.map(([x, y]) => [x, y]), ...pos];
+                }
+              }
             }
-          });
+          }
 
-          if (limiteB) {
-            setTrocaPeça(true);
-            const ctx = canvasRef.current?.getContext("2d");
-            desenharCampo(ctx);
-            desenharPeças(ctx);
-            setPeçasCampo((p) => {
-              return p;
-            });
-            peçaAtual();
-            limiteB = false;
-            return pos;
+          for (let i = 0; i < peça.length; i++) {
+            if (novaPeça[i][1] > 19) {
+              const ctx = canvasRef.current?.getContext("2d");
+              desenharCampo(ctx);
+              desenharPeças(ctx);
+              peçaAtual();
+              const peçaNova = peças[nRef.current];
+              return [peçaNova.map(([x, y]) => [x, y]), ...pos];
+            }
           }
 
           return pos.map((p, i) => (i === 0 ? novaPeça : p));
