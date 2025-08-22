@@ -134,11 +134,28 @@ export default function CampoTetris() {
       const peça = pos[0];
 
       if (direçao === "ArrowUp") {
-        if (nRef.current === 1) return pos;
+        for(let i = 0; i < peça.length; i++){
+          if (peça[i][0] === peças[1][i][0] && peça[i][1] === peças[1][i][1]) {
+          return pos
+        };
+        }
+        
         const eixo = peça[0];
         const pivot = peça.map(([x, y]) => [x - eixo[0], y - eixo[1]]);
         const rotaçao = pivot.map(([x, y]) => [y, -x]);
         const novaPosiçao = rotaçao.map(([x, y]) => [x + eixo[0], y + eixo[1]]);
+        for(let i = 0; i < novaPosiçao.length; i++){
+          setDireçao("");
+          if(novaPosiçao[i][0] > 9 || novaPosiçao[i][0] < 0 ){
+            setDireçao("");
+            return pos
+          }
+          if(novaPosiçao[i][1] < 0 || novaPosiçao[i][1] > 19){
+            setDireçao("");
+            return pos
+          }
+        }
+        
         setDireçao("");
 
         return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
@@ -147,11 +164,12 @@ export default function CampoTetris() {
         const novaPosiçao = peça.map(([x, y]) => [x, y + 1]);
         for (let i = 0; i < novaPosiçao.length; i++) {
           if (novaPosiçao[i][1] > 19) {
+            setDireçao("");
             return pos;
           }
         }
 
-        for (let i = 0; i < pos.length; i++) {
+        for (let i = 1; i < pos.length; i++) {
           for (let p = 0; p < pos[i].length; p++) {
             for (let n = 0; n < novaPosiçao.length; n++) {
               if (
@@ -176,6 +194,19 @@ export default function CampoTetris() {
             return pos;
           }
         }
+        for (let i = 1; i < pos.length; i++) {
+          for (let p = 0; p < pos[i].length; p++) {
+            for (let n = 0; n < novaPosiçao.length; n++) {
+              if (
+                novaPosiçao[n][0] === pos[i][p][0] &&
+                novaPosiçao[n][1] === pos[i][p][1]
+              ) {
+                setDireçao("")
+                return pos
+              }
+            }
+          }
+        }
         setDireçao("");
         return pos.map((p, i) => (i === 0 ? novaPosiçao : p));
       }
@@ -185,6 +216,19 @@ export default function CampoTetris() {
         for (let i = 0; i < novaPosiçao.length; i++) {
           if (novaPosiçao[i][0] < 0) {
             return pos;
+          }
+        }
+        for (let i = 1; i < pos.length; i++) {
+          for (let p = 0; p < pos[i].length; p++) {
+            for (let n = 0; n < novaPosiçao.length; n++) {
+              if (
+                novaPosiçao[n][0] === pos[i][p][0] &&
+                novaPosiçao[n][1] === pos[i][p][1]
+              ) {
+                setDireçao("")
+                return pos
+              }
+            }
           }
         }
         setDireçao("");
