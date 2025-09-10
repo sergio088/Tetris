@@ -56,7 +56,7 @@ export default function CampoTetris() {
     [5, 0, "green"],
   ];
 
-  const [peças, setPosiçaoPeças] = useState<Peça[]>([
+  const [peças] = useState<Peça[]>([
     peçaI,
     peçaO,
     peçaT,
@@ -65,7 +65,6 @@ export default function CampoTetris() {
     peçaZ,
     peçaS,
   ]);
-  const peçasRef = useRef<Peça[]>(peças);
 
   const nRef = useRef<number>(0);
   const [direçao, setDireçao] = useState("");
@@ -73,14 +72,15 @@ export default function CampoTetris() {
   const peçasCampoRef = useRef<Peça[]>([]);
   const [num, setNum] = useState(Number);
 
+  // Func que desenha o campo
   function desenharCampo(ctx: CanvasRenderingContext2D | null | undefined) {
     for (let y = 0; y < 20; y++) {
       for (let x = 0; x < 10; x++) {
         ctx!.fillRect(x * 20, y * 20, 20, 20);
         ctx!.fillStyle = "black";
-        ctx!.strokeStyle = "white";
-        ctx!.lineWidth = 1;
-        ctx!.strokeRect(x * 20, y * 20, 20, 20);
+        // ctx!.strokeStyle = "white";
+        // ctx!.lineWidth = 1;
+        // // ctx!.strokeRect(x * 20, y * 20, 20, 20);
       }
     }
   }
@@ -88,29 +88,33 @@ export default function CampoTetris() {
   const peçaAtual = () => {
     const n = Math.floor(Math.random() * peças.length);
     setNum(n);
-  };
+  }; // Func que decide a peça atual
 
   useEffect(() => {
     nRef.current = num;
-  }, [num]);
+  }, [num]); // nRef bem util
 
   useEffect(() => {
     setPeçasCampo((pos) => {
       return [peças[nRef.current].map(([x, y, cor]) => [x, y, cor]), ...pos];
     });
-  }, []);
+  }, []); // Primeiro setPeçasCampo do load
 
-  useEffect(() => {
-    peçasRef.current = peças;
-  }, [peças]);
+  // Retirar isso
+
+  // const peçasRef = useRef<Peça[]>(peças);
+  // useEffect(() => {
+  //   peçasRef.current = peças;
+  // }, [peças]); // Ref Peças
 
   useEffect(() => {
     peçasCampoRef.current = peçasCampo;
-  }, [peçasCampo]);
+  }, [peçasCampo]); // Ref peçasCampo
 
+  // Desenha as peças em campo
   function desenharPeças(ctx: CanvasRenderingContext2D | null | undefined) {
     peçasCampoRef.current.forEach((p) => {
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < p.length; i++) {
         const [x, y, cor] = p[i];
         ctx!.fillStyle = cor;
         ctx!.fillRect(x * 20, y * 20, 20, 20);
@@ -125,7 +129,7 @@ export default function CampoTetris() {
     const ctx = canvasRef.current?.getContext("2d");
     desenharCampo(ctx);
     desenharPeças(ctx);
-  }, [peçasCampo]);
+  }, [peçasCampo]); // puxa o desenhar campa e desenhar peças
 
   useEffect(() => {
     const keydown = (e: KeyboardEvent) => {
@@ -277,13 +281,14 @@ export default function CampoTetris() {
           const peça = pos[0];
           if (!peça) return pos; // se não existe, não faz nada
 
+          // Proximo movimento da peça dela caindo
           const novaPeça = peça.map(([x, y, cor]): Bloco => [x, y + 1, cor]);
 
           for (let p = 1; p < pos.length; p++) {
             for (let b = 0; b < pos[p].length; b++) {
               for (let i = 0; i < novaPeça.length; i++) {
                 const peçaNova = peças[nRef.current];
-                // perdeu
+                // perdeu, peça passou da altura(arrumar isso)
                 if (
                   peçaNova[i][0] === pos[p][b][0] &&
                   peçaNova[i][1] === pos[p][b][1]
@@ -291,7 +296,7 @@ export default function CampoTetris() {
                   alert("Perdeu");
                   return [peçaNova];
                 }
-                // bateu
+                // bateu em outra peça na queda automatica
                 if (
                   novaPeça[i][0] === pos[p][b][0] &&
                   novaPeça[i][1] === pos[p][b][1]
@@ -310,6 +315,35 @@ export default function CampoTetris() {
             }
           }
 
+          // Retira a linha
+          let blocosL: number[][];
+          let l: number;
+          for (let y = 0; y < 20; y++) {
+            blocosL = [];
+            l = 0;
+            for (let x = 0; x < 10; x++) {
+              for (let p = 0; p < pos.length; p++) {
+                for (let b = 0; b < pos[p].length; b++) {
+                  if (pos[p][b][0] === x && pos[p][b][1] === y) {
+                    l += 1;
+                    blocosL.push([x, y]);
+                  }
+
+                  if (l >= 10) {
+                    const novoPeçasCampo = pos.map((peça) =>
+                      peça.filter(
+                        ([x, y]) =>
+                          !blocosL.some(([lx, ly]) => x === lx && ly === y)
+                      )
+                    );
+                    return novoPeçasCampo;
+                  }
+                }
+              }
+            }
+          }
+
+          // bateu no chao
           for (let i = 0; i < peça.length; i++) {
             if (novaPeça[i][1] > 19) {
               const ctx = canvasRef.current?.getContext("2d");
@@ -325,22 +359,31 @@ export default function CampoTetris() {
             }
           }
 
-          for (let y = 0; y < 20; y++) {
-            for (let x = 0; x < 10; x++) {
-              for (let p = 1; p < pos.length; p++) {
-                for (let b = 0; b < pos[p].length; b++) {
-                  let l: number = 0;
-                  if (pos[p][b][0] === x && pos[p][b][1] === y) {
-                    l += 1;
-                  }
-                  if (l === 10) {
-                    alert("linha");
-                  }
-                }
-              }
-            }
-          }
+          // vou retirar esse bloco
 
+          // for (let i = 0; i < peça.length; i++) {
+          //   if (novaPeça[i][1] > 19) {
+          //     let l: number = 0;
+          //     for (let y = 0; y < 20; y++) {
+          //       l = 0;
+          //       for (let x = 0; x < 10; x++) {
+          //         for (let p = 1; p < pos.length; p++) {
+          //           for (let b = 0; b < pos[p].length; b++) {
+          //             if (pos[p][b][0] === x && pos[p][b][1] === y) {
+          //               l += 1;
+          //             }
+          //             console.log(l);
+          //             if (l === 10) {
+          //               alert(`linha ${y}`);
+          //             }
+          //           }
+          //         }
+          //       }
+          //     }
+          //   }
+          // }
+
+          //queda da peça
           return pos.map((p, i): Peça => (i === 0 ? novaPeça : p));
         });
       }
