@@ -359,30 +359,6 @@ export default function CampoTetris() {
             }
           }
 
-          // vou retirar esse bloco
-
-          // for (let i = 0; i < peça.length; i++) {
-          //   if (novaPeça[i][1] > 19) {
-          //     let l: number = 0;
-          //     for (let y = 0; y < 20; y++) {
-          //       l = 0;
-          //       for (let x = 0; x < 10; x++) {
-          //         for (let p = 1; p < pos.length; p++) {
-          //           for (let b = 0; b < pos[p].length; b++) {
-          //             if (pos[p][b][0] === x && pos[p][b][1] === y) {
-          //               l += 1;
-          //             }
-          //             console.log(l);
-          //             if (l === 10) {
-          //               alert(`linha ${y}`);
-          //             }
-          //           }
-          //         }
-          //       }
-          //     }
-          //   }
-          // }
-
           //queda da peça
           return pos.map((p, i): Peça => (i === 0 ? novaPeça : p));
         });
