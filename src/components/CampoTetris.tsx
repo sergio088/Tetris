@@ -100,13 +100,6 @@ export default function CampoTetris() {
     });
   }, []); // Primeiro setPeçasCampo do load
 
-  // Retirar isso
-
-  // const peçasRef = useRef<Peça[]>(peças);
-  // useEffect(() => {
-  //   peçasRef.current = peças;
-  // }, [peças]); // Ref Peças
-
   useEffect(() => {
     peçasCampoRef.current = peçasCampo;
   }, [peçasCampo]); // Ref peçasCampo
@@ -124,6 +117,43 @@ export default function CampoTetris() {
       }
     });
   }
+
+  // Func que retira a linha
+  const retirarLinha = (pos: Peça[], result: Peça[]): Peça[] => {
+    // Retira a linha
+    let blocosL: number[][];
+    let l: number;
+    for (let y = 0; y < 20; y++) {
+      blocosL = [];
+      l = 0;
+      for (let x = 0; x < 10; x++) {
+        for (let p = 0; p < pos.length; p++) {
+          for (let b = 0; b < pos[p].length; b++) {
+            if (pos[p][b][0] === x && pos[p][b][1] === y) {
+              l += 1;
+              blocosL.push([x, y]);
+            }
+
+            if (l === 10) {
+              const novoPeçasCampo = pos.map((peça) =>
+                peça.filter(
+                  ([x, y]) => !blocosL.some(([lx, ly]) => x === lx && ly === y)
+                )
+              );
+              return novoPeçasCampo;
+            } else {
+              const ctx = canvasRef.current?.getContext("2d");
+              desenharCampo(ctx);
+              desenharPeças(ctx);
+              peçaAtual();
+              return result;
+            }
+          }
+        }
+      }
+    }
+    return pos;
+  };
 
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
@@ -147,6 +177,7 @@ export default function CampoTetris() {
     setPeçasCampo((pos): Peça[] => {
       const peça = pos[0];
 
+      // Cima
       if (direçao === "ArrowUp") {
         for (let i = 0; i < peça.length; i++) {
           if (peça[i][0] === peças[1][i][0] && peça[i][1] === peças[1][i][1]) {
@@ -179,18 +210,20 @@ export default function CampoTetris() {
 
         return pos.map((p, i): Peça => (i === 0 ? novaPosiçao : p));
       }
+      // Baixo
       if (direçao === "ArrowDown") {
         const novaPosiçao = peça.map(([x, y, cor]): Bloco => [x, y + 1, cor]);
         for (let i = 0; i < novaPosiçao.length; i++) {
           if (novaPosiçao[i][1] > 19) {
             setDireçao("");
-            return pos;
+            return retirarLinha(pos, pos);
           }
         }
 
         for (let i = 1; i < pos.length; i++) {
           for (let p = 0; p < pos[i].length; p++) {
             for (let n = 0; n < novaPosiçao.length; n++) {
+              // Bateu em outra peça
               if (
                 novaPosiçao[n][0] === pos[i][p][0] &&
                 novaPosiçao[n][1] === pos[i][p][1]
@@ -263,6 +296,22 @@ export default function CampoTetris() {
     desenharPeças(ctx);
   }, [direçao]); //controle das Arrow
 
+  const novoPeçasCampo = (pos: Peça[], linhaCompletas: number[]) => {
+    const novoPeçasCampo = pos.map((peça) =>
+      peça
+        .filter(([x, y]) => !linhaCompletas.some((ly) => ly === y))
+        .map(([x, y, cor]) => {
+          if (y < linhaCompletas[0]) {
+            // Move blocks above the removed line down
+            return [x, y + 1, cor] as Bloco;
+          }
+          return [x, y, cor] as Bloco;
+        })
+    );
+    setPeçasCampo(novoPeçasCampo);
+  }; // testar para ver se esta funcionando
+
+  // Queda automatica da peça
   useEffect(() => {
     let ultimoTempo = 0;
     let acumulador = 0;
@@ -279,6 +328,7 @@ export default function CampoTetris() {
         acumulador -= intervalo;
         setPeçasCampo((pos): Peça[] => {
           const peça = pos[0];
+          const peçaNova = peças[nRef.current];
           if (!peça) return pos; // se não existe, não faz nada
 
           // Proximo movimento da peça dela caindo
@@ -293,7 +343,6 @@ export default function CampoTetris() {
                   peçaNova[i][0] === pos[p][b][0] &&
                   peçaNova[i][1] === pos[p][b][1]
                 ) {
-                  alert("Perdeu");
                   return [peçaNova];
                 }
                 // bateu em outra peça na queda automatica
@@ -301,61 +350,41 @@ export default function CampoTetris() {
                   novaPeça[i][0] === pos[p][b][0] &&
                   novaPeça[i][1] === pos[p][b][1]
                 ) {
-                  const ctx = canvasRef.current?.getContext("2d");
-                  desenharCampo(ctx);
-                  desenharPeças(ctx);
-                  peçaAtual();
-
-                  return [
+                  // Retira a linha ou Devolve igual
+                  return retirarLinha(pos, [
                     peçaNova.map(([x, y, cor]): Bloco => [x, y, cor]),
                     ...pos,
-                  ];
+                  ]);
                 }
               }
             }
           }
 
           // Retira a linha
-          let blocosL: number[][];
-          let l: number;
+          const linhaCompletas: number[] = [];
           for (let y = 0; y < 20; y++) {
-            blocosL = [];
-            l = 0;
+            let l = 0;
             for (let x = 0; x < 10; x++) {
               for (let p = 0; p < pos.length; p++) {
                 for (let b = 0; b < pos[p].length; b++) {
                   if (pos[p][b][0] === x && pos[p][b][1] === y) {
                     l += 1;
-                    blocosL.push([x, y]);
-                  }
-
-                  if (l >= 10) {
-                    const novoPeçasCampo = pos.map((peça) =>
-                      peça.filter(
-                        ([x, y]) =>
-                          !blocosL.some(([lx, ly]) => x === lx && ly === y)
-                      )
-                    );
-                    return novoPeçasCampo;
                   }
                 }
               }
             }
+            if (l === 10) linhaCompletas.push(y);
           }
+          novoPeçasCampo(pos, linhaCompletas); // Bug: provavel que quando chama essa func o loop pare
 
           // bateu no chao
           for (let i = 0; i < peça.length; i++) {
             if (novaPeça[i][1] > 19) {
-              const ctx = canvasRef.current?.getContext("2d");
-              desenharCampo(ctx);
-              desenharPeças(ctx);
-              peçaAtual();
-              const peçaNova = peças[nRef.current];
-
-              return [
+              // Retira a linha ou Devolve igual
+              return retirarLinha(pos, [
                 peçaNova.map(([x, y, cor]): Bloco => [x, y, cor]),
                 ...pos,
-              ];
+              ]);
             }
           }
 
